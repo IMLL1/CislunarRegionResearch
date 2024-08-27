@@ -20,29 +20,10 @@ class CR3BP:
         else:
             print("mu should be <0.5. Setting mu=1-mu")
             self.mu = 1 - mu
-
-        self.L_points = self.lagranges()
         G = 6.674e-11
         # period should be sqrt(LU^3 / (G * MU))
         self.LU = LU
         self.TU = TU
-
-    def lagranges(self):
-        def optFunc(x):
-            zero = (
-                -(x + self.mu) * (1 - self.mu) / (np.abs(x + self.mu) ** 3)
-                - (x - 1 + self.mu) * self.mu / (np.abs(x - 1 + self.mu) ** 3)
-                + x
-            )
-            return zero
-
-        L1 = [newton(optFunc, (1 - self.mu) / 2), 0]
-        L2 = [newton(optFunc, (2 - self.mu) / 2), 0]
-        L3 = [newton(optFunc, -1), 0]
-        L4 = [1 / 2 - self.mu, np.sqrt(3) / 2]
-        L5 = [1 / 2 - self.mu, -np.sqrt(3) / 2]
-
-        return np.array([L1, L2, L3, L4, L5]).T
 
     def pseudopotential(self, x, y, z):
         r1mag = np.sqrt((x + self.mu) ** 2 + y**2 + z**2)
@@ -109,44 +90,3 @@ class CR3BP:
         self.states = np.hstack((pos_new, vel_new))
         moonstate_cr3bp = [(1 - self.mu) * self.LU, 0, 0]
         self.moonstate = rots.apply(moonstate_cr3bp)
-
-    def find_periodic_orbit(
-        self,
-        opt_vars=["tf", "z", "vy"],
-        obj_zero=["vx", "y"],
-        init_guess=[2.77, 0.82285, 0, 0.05, 0, 0.17, 0],
-        tol=None,
-    ):
-        func_inputs = pd.Series(
-            {"tf": 0, "x": 1, "y": 2, "z": 3, "vx": 4, "vy": 5, "vz": 6}
-        )
-        fixed_vars = list(func_inputs.drop(index=opt_vars).keys())
-        init_guess = np.array(init_guess)
-        opt_paramnums = list(func_inputs[opt_vars].values)
-
-        def minFunc(inputs):
-            states_in = np.zeros(7)
-
-            # insert non-optimization variables
-            states_in[func_inputs[fixed_vars]] = init_guess[func_inputs[fixed_vars]]
-            states_in[func_inputs[opt_vars]] = inputs
-            # prevent time from going to zero (bad optimization)
-            if states_in[0] < 0.5 * init_guess[0]:
-                states_in[0] = 0.5 * init_guess[0]
-
-            _, states = self.propagate_nondim(states_in[1:], states_in[0])
-            state_fin = states[-1, :]
-
-            # get objective states and their norm
-            obj_states = np.array(state_fin[func_inputs[obj_zero] - 1])
-            obj_func = np.linalg.norm(obj_states)
-            return obj_func
-
-        # init input is init guess for non-set variables
-        init_input = init_guess[opt_paramnums]
-        min_object = minimize(minFunc, init_input, method="Nelder-Mead", tol=tol)
-        minimizing_guess = min_object.x
-        optimal_state = np.zeros(7)
-        optimal_state[func_inputs[fixed_vars]] = init_guess[func_inputs[fixed_vars]]
-        optimal_state[func_inputs[opt_vars]] = minimizing_guess
-        return optimal_state
