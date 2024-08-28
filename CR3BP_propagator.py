@@ -56,14 +56,17 @@ class CR3BP:
         self,
         state0,
         tspan,
+        t_eval=None,
         propagator="LSODA",
         rtol=1e-9,
         atol=1e-9,
         dense_output=False,
     ):
+
         self.solution = solve_ivp(
             fun=self.eom_nondim,
-            t_span=(0, tspan),
+            t_span=(0,tspan),
+            t_eval=t_eval,
             y0=np.array(state0),
             method=propagator,
             atol=atol,
