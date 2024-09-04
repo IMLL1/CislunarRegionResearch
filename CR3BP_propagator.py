@@ -21,7 +21,6 @@ class CR3BP:
             print("mu should be <0.5. Setting mu=1-mu")
             self.mu = 1 - mu
         G = 6.674e-11
-        # period should be sqrt(LU^3 / (G * MU))
         self.LU = LU
         self.TU = TU
 
@@ -65,7 +64,7 @@ class CR3BP:
 
         self.solution = solve_ivp(
             fun=self.eom_nondim,
-            t_span=(0,tspan),
+            t_span=(0, tspan),
             t_eval=t_eval,
             y0=np.array(state0),
             method=propagator,
