@@ -29,7 +29,7 @@ def r_rate(states_rotating: list, periods: list, earth_x: float, ids: list):
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for idx in range(n):
+    for idx in range(len(pos)):
         ax.plot(
             radius[idx],
             r_rate[idx],
@@ -57,7 +57,6 @@ def hist_linear_density(
         states_run[:, :3] - np.array([earth_x, 0, 0]) for states_run in states_rotating
     ]
     radius = []
-    pdfs = []
     for n in range(len(pos)):
         pos_run = pos[n]
         t = np.linspace(0, periods[n], num_points)
@@ -68,7 +67,7 @@ def hist_linear_density(
         radius.append(radius_run)
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    for idx in range(n):
+    for idx in range(len(pos)):
         y, x = np.histogram(
             radius[idx], bins=max([num_points // 5000, 100]), density=True
         )
