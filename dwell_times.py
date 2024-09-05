@@ -70,8 +70,10 @@ def hist_linear_density(
     ax = fig.add_subplot(111)
     for idx in range(n):
         y, x = np.histogram(
-            radius_run, bins=max([num_points // 5000, 100]), density=True
+            radius[idx], bins=max([num_points // 5000, 100]), density=True
         )
+        binwidth = np.mean(np.diff(x))
+        y *= binwidth
         x = np.mean([x[1:], x[:-1]], axis=0)
         ax.plot(
             x,
