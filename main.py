@@ -8,7 +8,7 @@ from dwell_times import r_rate, hist_linear_density, kern_linear_density
 
 seed(0)
 
-ids = [25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 750, 1000]
+ids = [25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 600]
 tf, DRO_ICs = read_ICs(ids)
 base_propagator = CR3BP(LU=389703, TU=382981)
 
@@ -24,14 +24,22 @@ for idx in range(len(ids)):
 
 # Dwell Time functions
 
-# r_rate(
-#     CR3BP_states,
-#     tf,
-#     (-base_propagator.mu) * base_propagator.LU,
-#     ids,
-# )
+r_rate(
+    CR3BP_states,
+    tf,
+    (-base_propagator.mu) * base_propagator.LU,
+    ids,
+)
 
 hist_linear_density(
+    CR3BP_states,
+    times,
+    tf * base_propagator.TU,
+    (-base_propagator.mu) * base_propagator.LU,
+    ids,
+)
+
+kern_linear_density(
     CR3BP_states,
     times,
     tf * base_propagator.TU,

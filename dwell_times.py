@@ -22,8 +22,13 @@ def r_rate(states_rotating: list, periods: list, earth_x: float, ids: list):
         pos_run = pos[n]
         vel_run = vel[n]
         radius_run = np.linalg.vector_norm(pos_run, axis=1)
-        radial_vel = pos_run * np.sum(pos_run * vel_run) / radius_run[:, None] ** 2
-        r_rate.append(np.abs(radial_vel / periods[n]))
+        radial_vel = (
+            pos_run
+            * np.sum(pos_run * vel_run, axis=1)[:, None]
+            / radius_run[:, None] ** 2
+        )
+        radial_vel = np.linalg.vector_norm(radial_vel, axis=1)
+        r_rate.append(np.abs(radial_vel * periods[n]))
         radius.append(radius_run)
     # return radius, dwell_time
 
@@ -36,9 +41,9 @@ def r_rate(states_rotating: list, periods: list, earth_x: float, ids: list):
             color=hsv_to_hex((360 * idx / len(pos), 0.75, 1)),
             label="id: " + str(ids[idx]),
         )
-    ax.set_ylabel("Dwell Time [km/period]")
+    ax.set_ylabel("Radial Rate [km/period]")
     ax.set_xlabel("Radius [km]")
-    plt.title("Dwell Time vs Radius")
+    plt.title("Radial Rate vs Radius")
     plt.grid(linestyle="dashed", lw=0.5, c="gray")
     fig.legend()
     plt.show()
@@ -71,8 +76,6 @@ def hist_linear_density(
         y, x = np.histogram(
             radius[idx], bins=max([num_points // 5000, 100]), density=True
         )
-        binwidth = np.mean(np.diff(x))
-        y *= binwidth
         x = np.mean([x[1:], x[:-1]], axis=0)
         ax.plot(
             x,
@@ -94,7 +97,7 @@ def kern_linear_density(
     periods: list,
     earth_x: float,
     ids: list,
-    num_points: int = 1e6,
+    num_points: int = 1e5,
 ):
     num_points = int(num_points)
     pos = [
