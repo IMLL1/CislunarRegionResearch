@@ -1,6 +1,5 @@
 """
 Adapted from Alfonso Gonzalez's class at https://github.com/alfonsogonzalez/AWP
-Some inspiration taken from NASA Johnson Space Center's Copernicus: https://www.nasa.gov/general/copernicus/
 """
 
 from scipy.integrate import solve_ivp

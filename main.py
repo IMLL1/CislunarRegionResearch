@@ -1,14 +1,13 @@
-from CR3BP_propagator import CR3BP
+from propagators import CR3BP
 from read_ICs import read_ICs
 from plot_trajectories import plot_trajectories
-from numpy.random import seed
+
+# from numpy.random import seed
+# seed(0)
 from dwell_times import r_rate, hist_linear_density, kern_linear_density
 
-# Python docs used extensively
-
-seed(0)
-
 ids = [25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 600]
+# ids = [1075, 1100, 1125, 1140]
 tf, DRO_ICs = read_ICs(ids)
 base_propagator = CR3BP(LU=389703, TU=382981)
 
@@ -46,7 +45,6 @@ kern_linear_density(
     (-base_propagator.mu) * base_propagator.LU,
     ids,
 )
-# dwell_times = inv_vel()
 
 plot_trajectories(
     inertial_states,
