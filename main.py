@@ -23,6 +23,18 @@ for idx in range(len(ids)):
 
 # Dwell Time functions
 
+plot_trajectories(
+    inertial_states,
+    CR3BP_states,
+    base_propagator.moonstate,
+    [
+        (1 - base_propagator.mu) * base_propagator.LU,
+        (-base_propagator.mu) * base_propagator.LU,
+    ],
+    ids,
+)
+
+
 r_rate(
     CR3BP_states,
     tf,
@@ -43,16 +55,5 @@ kern_linear_density(
     times,
     tf * base_propagator.TU,
     (-base_propagator.mu) * base_propagator.LU,
-    ids,
-)
-
-plot_trajectories(
-    inertial_states,
-    CR3BP_states,
-    base_propagator.moonstate,
-    [
-        (1 - base_propagator.mu) * base_propagator.LU,
-        (-base_propagator.mu) * base_propagator.LU,
-    ],
     ids,
 )

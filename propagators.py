@@ -3,7 +3,6 @@ Adapted from Alfonso Gonzalez's class at https://github.com/alfonsogonzalez/AWP
 """
 
 from scipy.integrate import solve_ivp
-from scipy.optimize import newton, minimize
 from scipy.spatial.transform import rotation
 import matplotlib.pyplot as plt
 import numpy as np
