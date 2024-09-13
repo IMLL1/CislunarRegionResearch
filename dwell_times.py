@@ -131,3 +131,49 @@ def kern_linear_density(
     plt.grid(linestyle="dashed", lw=0.5, c="gray")
     fig.legend()
     plt.show()
+
+
+def altitude_blocks(
+    states_rotating: list,
+    times: list,
+    periods: list,
+    earth_x: float,
+    ids: list,
+    blocks: dict = {
+        "LEO": (6371 + 100, 6371 + 1500),
+        "MEO": (6371 + 15000, 6371 + 25000),
+        "GEO": (42000, 42200),
+    },
+):
+    # find times that it passes each point
+    radius = [
+        np.linalg.vector_norm(states_run[:, :3] - np.array([earth_x, 0, 0]), axis=1)
+        for states_run in states_rotating
+    ]
+
+    for n in range(len(radius)):
+        radius_run = radius[n]
+        for block in blocks.keys():
+            lb, ub = blocks[block]
+            lb_crossings = np.diff(np.sign(radius_run - lb))
+            ub_crossings = np.diff(np.sign(radius_run - ub))
+            # PSUEDO CODE:
+            # 1. coarsely locate crossings of both lower and upper bounds 
+            # 2. if first crossing is exit, add the period to it (TBD how)
+            # 3. interpolate to find fine precision crossing times
+            # 4. pair up crossings, find duration of each pair
+            # 5. sum of durations, divide by period
+            # coarse location of crossings of both lower and upper bound
+            
+            # 1. coarsely locate crossings of both lower and upper bounds
+            lb_guess = np.nonzero(lb_crossings)
+            ub_guess = np.nonzero(ub_crossings)
+            crossings = np.sort([*lb_guess, ub_guess])
+            
+            # 2. if first crossing is exit, add the period to it
+            if crossings[0] in lb_guess:
+                direction = lb_crossings[-1]
+            else:
+                direction = ub_crossings[-1]
+
+    return 1
