@@ -89,6 +89,8 @@ def hist_linear_density(
     plt.grid(linestyle="dashed", lw=0.5, c="gray")
     fig.legend()
     plt.show()
+    
+    return y, x
 
 
 def kern_linear_density(
@@ -192,8 +194,8 @@ def altitude_blocks(
                 # upper or lower bound, depending on which way we're crossing
                 bound = lb if lb_crossings[guess] else ub
                 # linear interpolation
-                tcross = times[guess] - (radius_run - bound)[guess] * (
-                    times[guess + 1] - times[guess]
+                tcross = times[n][guess] - (radius_run - bound)[guess] * (
+                    times[n][guess + 1] - times[n][guess]
                 ) / (radius_run[guess + 1] - radius_run[guess])
                 crossing_times[xnum] = tcross
                 # if this is the last crossing AND it's an exit, add the period to it so that we exit at the end instead of the beginning
