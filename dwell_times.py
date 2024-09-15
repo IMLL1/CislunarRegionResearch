@@ -185,7 +185,7 @@ def altitude_blocks(
 
             assert np.mod(len(crossings_idx), 2) == 0
 
-            crossing_times = 0 * crossings_idx
+            crossing_times = 0.0 * crossings_idx
             # 3: interpolate to find precise crossing times
             for xnum in range(len(crossings_idx)):
                 guess = crossings_idx[xnum]  # guess index
