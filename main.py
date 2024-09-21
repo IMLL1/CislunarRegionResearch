@@ -4,10 +4,16 @@ from plot_trajectories import plot_trajectories
 
 # from numpy.random import seed
 # seed(0)
-from dwell_times import r_rate, hist_linear_density, kern_linear_density
+from dwell_times import (
+    r_rate,
+    hist_linear_density,
+    kern_linear_density,
+    altitude_blocks,
+)
 
-ids = [25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 600]
+# ids = [25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 600]
 # ids = [1075, 1100, 1125, 1140]
+ids = [25, 100, 150, 200, 400, 600]
 tf, DRO_ICs = read_ICs(ids)
 base_propagator = CR3BP(LU=389703, TU=382981)
 
@@ -34,23 +40,7 @@ plot_trajectories(
     ids,
 )
 
-
-r_rate(
-    CR3BP_states,
-    tf,
-    (-base_propagator.mu) * base_propagator.LU,
-    ids,
-)
-
 hist_linear_density(
-    CR3BP_states,
-    times,
-    tf * base_propagator.TU,
-    (-base_propagator.mu) * base_propagator.LU,
-    ids,
-)
-
-kern_linear_density(
     CR3BP_states,
     times,
     tf * base_propagator.TU,

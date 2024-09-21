@@ -56,12 +56,15 @@ def hist_linear_density(
     earth_x: float,
     ids: list,
     num_points: int = 1e7,
+    alt_range=None,
 ):
     num_points = int(num_points)
     pos = [
         states_run[:, :3] - np.array([earth_x, 0, 0]) for states_run in states_rotating
     ]
     radius = []
+    p_list = []
+    r_list = []
     for n in range(len(pos)):
         pos_run = pos[n]
         t = np.linspace(0, periods[n], num_points)
@@ -74,7 +77,10 @@ def hist_linear_density(
     ax = fig.add_subplot(111)
     for idx in range(len(pos)):
         y, x = np.histogram(
-            radius[idx], bins=max([num_points // 5000, 100]), density=True
+            radius[idx],
+            range=alt_range,
+            bins=max([num_points // 1000, 100]),
+            density=True,
         )
         x = np.mean([x[1:], x[:-1]], axis=0)
         ax.plot(
@@ -83,14 +89,16 @@ def hist_linear_density(
             color=hsv_to_hex((360 * idx / len(pos), 0.75, 1)),
             label="id: " + str(ids[idx]),
         )
+        p_list.append(y)
+        r_list.append(x)
     ax.set_ylabel("Probability Density")
     ax.set_xlabel("Radius [km]")
     plt.title("Probability vs Radius")
     plt.grid(linestyle="dashed", lw=0.5, c="gray")
     fig.legend()
     plt.show()
-    
-    return y, x
+
+    return p_list, r_list
 
 
 def kern_linear_density(
@@ -175,19 +183,21 @@ def altitude_blocks(
             crossings_idx = np.sort([*lb_guess, *ub_guess])
 
             # 2. if first crossing is exit, move it
-            if crossings_idx[0] in lb_guess:
-                direction = lb_crossings[crossings_idx[0]]
-            else:
-                direction = ub_crossings[crossings_idx[0]]
-            if direction < 0:
-                crossings_idx = np.array([*crossings_idx[1:], crossings_idx[0]])
-                toAdd = periods[n]
-            else:
-                toAdd = 0
+            if len(crossings_idx) > 0:
+                if (
+                    crossings_idx[0] in lb_guess and lb_crossings[crossings_idx[0]] < 0
+                ) or (
+                    crossings_idx[0] in ub_guess and ub_crossings[crossings_idx[0]] > 0
+                ):
+
+                    crossings_idx = np.array([*crossings_idx[1:], crossings_idx[0]])
+                    toAdd = periods[n]
+                else:
+                    toAdd = 0
 
             assert np.mod(len(crossings_idx), 2) == 0
 
-            crossing_times = 0.0 * crossings_idx
+            crossing_times = np.zeros_like(crossings_idx)
             # 3: interpolate to find precise crossing times
             for xnum in range(len(crossings_idx)):
                 guess = crossings_idx[xnum]  # guess index
@@ -211,7 +221,7 @@ def altitude_blocks(
             dwelltimes[n][block] /= periods[n]
 
             # if no crossings, see if dwelltimes is 0 or 1
-            if radius_run[0] >= lb and radius_run[0] <= ub:
+            if len(crossings_idx) == 0 and radius_run[0] >= lb and radius_run[0] <= ub:
                 dwelltimes[n][block] = 1
 
     return dwelltimes
