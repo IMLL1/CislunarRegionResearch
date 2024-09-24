@@ -90,3 +90,42 @@ class CR3BP:
         self.states = np.hstack((pos_new, vel_new))
         moonstate_cr3bp = [(1 - self.mu) * self.LU, 0, 0]
         self.moonstate = rots.apply(moonstate_cr3bp)
+
+
+class TwoBody:
+    def __init__(self, mu: float = 3.986004e5):
+        self.mu = mu
+
+    def eom(self, t, state):
+        xyz = state[:3]
+        rmag = np.linalg.norm(xyz)
+
+        dstate = np.zeros(6)
+        dstate[:3] = state[3:]
+        dstate[3:] = -xyz * self.mu / rmag**3
+        return dstate
+
+    def propagate(
+        self,
+        state0,
+        tspan,
+        t_eval=None,
+        propagator="LSODA",
+        rtol=1e-9,
+        atol=1e-9,
+        dense_output=False,
+    ):
+
+        self.solution = solve_ivp(
+            fun=self.eom,
+            t_span=(0, tspan),
+            t_eval=t_eval,
+            y0=np.array(state0),
+            method=propagator,
+            atol=atol,
+            rtol=rtol,
+            dense_output=dense_output,
+        )
+
+        self.states = self.solution.y.T
+        self.ts = self.solution.t
