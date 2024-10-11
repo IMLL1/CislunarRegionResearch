@@ -1,6 +1,7 @@
 import numpy as np
 import sklearn.mixture
 import scipy as sp
+from functions.propagators import CR3BP
 
 
 # NOTE: states is N x 6
@@ -26,7 +27,30 @@ def alt_density_1d(
     )
 
     r_cdf = x
-    cdf = np.array([0, *np.cumsum(y)]) * (x[1]-x[0])
+    cdf = np.array([0, *np.cumsum(y)]) * (x[1] - x[0])
+
+    x = np.mean([x[1:], x[:-1]], axis=0)
+    p = y
+    r = x
+
+    return p, r, cdf, r_cdf
+
+
+def alt_density_1d_meshgrid(xyz_cols: list, earth_x: float, bins: list):
+    # num_points = np.shape(xyz_cols)[0]
+    if np.shape(xyz_cols)[1] == 2:
+        xyz_cols = np.array([xyz_cols[:, 0], xyz_cols[:, 1], 0 * xyz_cols[:, 0]]).T
+    pos = xyz_cols - np.array([[earth_x, 0, 0]])
+
+    radius_interp = np.linalg.vector_norm(pos, axis=1)
+    y, x = np.histogram(
+        radius_interp,
+        bins=bins,
+        density=True,
+    )
+
+    r_cdf = x
+    cdf = np.array([0, *np.cumsum(y)]) * (x[1] - x[0])
 
     x = np.mean([x[1:], x[:-1]], axis=0)
     p = y
@@ -64,3 +88,27 @@ def integrate_cdf(cdf1: list, integrand: list):
     int1 = cdf1[i + 1] - cdf1[i]
     prod = int1 * integrand
     return np.sum(prod)
+
+
+def planar_jacobi_points(JC, propagator: CR3BP, r_moon: float = 1740, nxy: int = 1000):
+    L2 = propagator.lagranges()[0, 1]  # L2 is furthest
+    xMoon = 1 - propagator.mu
+    linspace_1d = np.linspace(-(L2 - xMoon), (L2 - xMoon), nxy)
+    Xnd, Ynd = np.meshgrid(xMoon + linspace_1d, linspace_1d)
+    Xnd = Xnd.flatten()
+    Ynd = Ynd.flatten()
+    # filter out stuff that leaves the neck region
+    keep = np.nonzero((Xnd - xMoon) ** 2 + Ynd**2 <= (L2 - xMoon) ** 2)
+    Xnd = Xnd[keep]
+    Ynd = Ynd[keep]
+    keep = np.nonzero((Xnd - xMoon) ** 2 + Ynd**2 >= (r_moon / propagator.LU) ** 2)
+    Xnd = Xnd[keep]
+    Ynd = Ynd[keep]
+    JCs = propagator.get_JC(Xnd, Ynd, 0 * Xnd, 0 * Xnd, 0 * Xnd, 0 * Xnd)
+    keep = np.nonzero(JCs > JC)
+    Xnd = Xnd[keep]
+    Ynd = Ynd[keep]
+    Xnd *= propagator.LU
+    Ynd *= propagator.LU
+
+    return np.array([Xnd, Ynd]).T

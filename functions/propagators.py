@@ -3,6 +3,7 @@ Adapted from Alfonso Gonzalez's class at https://github.com/alfonsogonzalez/AWP
 """
 
 from scipy.integrate import solve_ivp
+from scipy.optimize import newton
 from scipy.spatial.transform import rotation
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,6 +30,28 @@ class CR3BP:
         Ucent = -0.5 * (x**2 + y**2)
 
         return Ugrav + Ucent
+
+    def get_JC(self, x, y, z, dx, dy, dz):
+        JC = -2 * self.pseudopotential(x, y, z)
+        JC -= dx**2 + dy**2 + dz**2
+        return JC
+    
+    def lagranges(self):
+        def optFunc(x):
+            zero = (
+                -(x + self.mu) * (1 - self.mu) / (np.abs(x + self.mu) ** 3)
+                - (x - 1 + self.mu) * self.mu / (np.abs(x - 1 + self.mu) ** 3)
+                + x
+            )
+            return zero
+
+        L1 = [newton(optFunc, (1 - self.mu) / 2), 0]
+        L2 = [newton(optFunc, (2 - self.mu) / 2), 0]
+        L3 = [newton(optFunc, -1), 0]
+        L4 = [1 / 2 - self.mu, np.sqrt(3) / 2]
+        L5 = [1 / 2 - self.mu, -np.sqrt(3) / 2]
+
+        return np.array([L1, L2, L3, L4, L5]).T
 
     def eom_nondim(self, t, state):
         x, y, z, vx, vy, vz = state
