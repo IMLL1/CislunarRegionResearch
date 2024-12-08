@@ -63,14 +63,7 @@ class CR3BP:
         dstate[3:] = ddxyz
         return dstate
 
-    def propagate(
-        self,
-        state0,
-        tfin,
-        n_eval=1000,
-        tol=1e-14,
-        # dense_output=False,
-    ):
+    def propagate(self, state0, tfin, n_eval=1000, tol=1e-14):
 
         t_eval = np.linspace(0, tfin, n_eval)
 
@@ -82,7 +75,6 @@ class CR3BP:
             method=self.solver,
             atol=tol,
             rtol=100 * tol,
-            # dense_output=dense_output,
         )
 
         return soln.y.T
@@ -183,11 +175,11 @@ class CR3BP:
         return M
 
     def manifold_points(self, x0, period, npts=25, d=1e-4, tol=3e-16):
-        tfs = np.linspace(0, period, npts + 1)[1:]
+        tfs = np.linspace(0, period, npts)
         M = self.monodromy(x0, period, tol)
         evals, evecs = np.linalg.eig(M)
         order = np.argsort(np.abs(evals))
-        vs = evecs[:, order[[0, 1, -1, -2]]]
+        vs = evecs[:, order[[0, -1]]]
         assert bool(np.all(np.isreal(vs)))
         vs = np.real(vs)
 
@@ -214,20 +206,35 @@ class CR3BP:
             vs_i = stm @ vs
             posnorms = np.linalg.norm(vs_i[:3, :], axis=0)
             vs_i = vs_i / posnorms
+            # vs_i /= np.sign(vs_i[0, :])
 
             # make sure all vecs are real only
             x0s_s1.append(x + d * vs_i[:, 0])
-            x0s_s2.append(x + d * vs_i[:, 1])
+            x0s_s2.append(x - d * vs_i[:, 0])
             x0s_u1.append(x + d * vs_i[:, -1])
-            x0s_u2.append(x + d * vs_i[:, -2])
+            x0s_u2.append(x - d * vs_i[:, -1])
 
         return x0s_s1, x0s_s2, x0s_u1, x0s_u2
 
-    def manifold_curves(
-        self, x0, period, npts=25, d=1e-4, nprop: int = 1000, tprop=None, tol=1e-10
-    ):
-        if tprop == None:
-            tprop = period / 3
+    def manifold_curves(self, x0, period, npts=25, d=1e-4, tol=1e-10):
+        def terminate(t, x):
+            findzero = x[1] if ((x[0] > (1 - self.mu)) or (x[0] < -self.mu)) else np.nan
+            return findzero
+
+        terminate.terminal = True
+
+        def prop_point(x0, backprop=True, tol=1e-10):
+            soln = solve_ivp(
+                fun=self.eom,
+                t_span=(0, 50 * period) if not backprop else (0, -50 * period),
+                y0=np.array(x0),
+                method=self.solver,
+                atol=tol,
+                rtol=100 * tol,
+                events=terminate,
+            )
+
+            return soln.y.T
 
         xs_s1 = []
         xs_s2 = []
@@ -235,9 +242,49 @@ class CR3BP:
         xs_u2 = []
         x0s_s1, x0s_s2, x0s_u1, x0s_u2 = self.manifold_points(x0, period, npts, d, tol)
         for i in range(npts):
-            xs_s1.append(self.propagate(x0s_s1[i], -tprop, nprop, tol))
-            xs_s2.append(self.propagate(x0s_s2[i], -tprop, nprop, tol))
-            xs_u1.append(self.propagate(x0s_u1[i], tprop, nprop, tol))
-            xs_u2.append(self.propagate(x0s_u2[i], tprop, nprop, tol))
+            xs_s1.append(prop_point(x0s_s1[i], True, 100 * tol))
+            xs_s2.append(prop_point(x0s_s2[i], True, 100 * tol))
+            xs_u1.append(prop_point(x0s_u1[i], False, 100 * tol))
+            xs_u2.append(prop_point(x0s_u2[i], False, 100 * tol))
 
         return xs_s1, xs_s2, xs_u1, xs_u2
+
+    # def manifold_curves(
+    #     self, x0, period, npts=25, d=1e-4, nprop: int = 10000, tol=1e-10
+    # ):
+    #     plttime = 10 * period
+
+    #     def terminate(t, x):
+    #         ycoord = x[1] if ((x[0] > 1 - self.mu) or (x0 < -self.mu)) else 1
+    #         return ycoord
+
+    #     nanstate = np.full((6,), np.nan)
+    #     xs_s1 = np.full((1, 6), np.nan, dtype=float)
+    #     xs_s2 = np.full((1, 6), np.nan, dtype=float)
+    #     xs_u1 = np.full((1, 6), np.nan, dtype=float)
+    #     xs_u2 = np.full((1, 6), np.nan, dtype=float)
+    #     x0s_s1, x0s_s2, x0s_u1, x0s_u2 = self.manifold_points(x0, period, npts, d, tol)
+
+    #     for i in range(npts):
+    #         xs_s1 = np.append(
+    #             xs_s1,
+    #             [*self.propagate(x0s_s1[i], -plttime, nprop, 10 * tol), nanstate],
+    #             0,
+    #         )
+    #         xs_s2 = np.append(
+    #             xs_s2,
+    #             [*self.propagate(x0s_s2[i], -plttime, nprop, 10 * tol), nanstate],
+    #             0,
+    #         )
+    #         xs_u1 = np.append(
+    #             xs_u1,
+    #             [*self.propagate(x0s_u1[i], plttime, nprop, 10 * tol), nanstate],
+    #             0,
+    #         )
+    #         xs_u2 = np.append(
+    #             xs_u2,
+    #             [*self.propagate(x0s_u2[i], plttime, nprop, 10 * tol), nanstate],
+    #             0,
+    #         )
+
+    #     return xs_s1[1:, :], xs_s2[1:, :], xs_u1[1:, :], xs_u2[1:, :]
