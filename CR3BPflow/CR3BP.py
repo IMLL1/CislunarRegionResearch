@@ -257,6 +257,7 @@ class CR3BP:
         xs_u1 = []
         xs_u2 = []
         x0s_s1, x0s_s2, x0s_u1, x0s_u2 = self.manifold_points(x0, period, npts, d, tol)
+        print("Stepoff points found")
         for i in range(npts):
             xs_s1.append(prop_point(x0s_s1[i], True, 100 * tol))
             xs_s2.append(prop_point(x0s_s2[i], True, 100 * tol))

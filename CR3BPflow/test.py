@@ -5,8 +5,8 @@ prop = CR3BP(odemethod="LSODA")
 # x0 = np.array([0.824293579889, 0, 0.05998471178, 0, 0.17085057273180781, 0])
 # tf = 1.9810382309
 
-x0 = np.array([9.0998753221126e-1, 0, 1.48301191319791e-1, 0, -2.91883100990976e-2, 0])
-tf = 3.3852875941088589
+# x0 = np.array([9.0998753221126e-1, 0, 1.48301191319791e-1, 0, -2.91883100990976e-2, 0])
+# tf = 3.3852875941088589
 
 # x0 = np.array([0.8313996, 0, 0.12248709, 0, 0.2370638, 0])
 # tf = 2.784659402929
@@ -14,11 +14,20 @@ tf = 3.3852875941088589
 # x0 = np.array([0.93073122691776, 0, 0.2306551858505, 0, 0.10356396251875, 0])
 # tf = 1.84245395871
 
+# x0 = np.array([0.8011304958, 0, 0, 0, 0.349706002289, 0])
+# tf = 3.2829498482757
+
+# x0 = np.array([1.02357000998, 0, 0, 0, 0.7960885792, 0])
+# tf = 4.50941196392786
+
+x0 = np.array([1.091124900971715, 0, 0, 0, 0.315996313973, 0])
+tf = 3.517927127531255
+
 optstate = prop.find_periodic_orbit(
     opt_vars=["tf", "z", "vy"],
     obj_zero=["y", "vx"],
     init_guess=[tf / 2, *x0],
-    tol=3e-12,
+    tol=1e-13,
 )
 x0half = optstate[1:]
 tfhalf = optstate[0]
@@ -41,7 +50,7 @@ print("Trajectory propagated")
 
 npts = 50
 xs_s1, xs_s2, xs_u1, xs_u2 = prop.manifold_curves(
-    x0=x0, period=tf, npts=npts, d=3e-4, tol=1e-10
+    x0=x0, period=tf, npts=npts, d=3e-3, tol=1e-10
 )  # , termtime=15
 # )
 print("manifold propagated")
