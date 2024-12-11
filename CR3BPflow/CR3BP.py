@@ -1,4 +1,4 @@
-from scipy.optimize import newton, minimize, approx_fprime
+from scipy.optimize import newton, root, approx_fprime
 from scipy.integrate import solve_ivp
 import pandas as pd
 import numpy as np
@@ -87,6 +87,8 @@ class CR3BP:
         init_guess=[2.77, 0.82285, 0, 0.05, 0, 0.17, 0],
         tol=None,
     ):
+        pad_args = len(obj_zero) - len(opt_vars)
+        # positive if more output than inpute, else negative
         func_inputs = pd.Series(
             {"tf": 0, "x": 1, "y": 2, "z": 3, "vx": 4, "vy": 5, "vz": 6}
         )
@@ -96,6 +98,7 @@ class CR3BP:
 
         def minFunc(inputs):
             states_in = np.zeros(7)
+            inputs = inputs[: len(opt_vars)]
 
             # insert non-optimization variables
             states_in[func_inputs[fixed_vars]] = init_guess[func_inputs[fixed_vars]]
@@ -109,12 +112,17 @@ class CR3BP:
 
             # get objective states and their norm
             obj_states = np.array(state_fin[func_inputs[obj_zero] - 1])
-            obj_func = np.linalg.norm(obj_states)
-            return obj_func
+            if pad_args < 0:
+                obj_states = np.array([*obj_states, *[0] * (-pad_args)])
+            # obj_func = np.linalg.norm(obj_states)
+            return obj_states
 
         # init input is init guess for non-set variables
         init_input = init_guess[opt_paramnums]
-        min_object = minimize(minFunc, init_input, method="Nelder-Mead", tol=tol)
+        if pad_args > 0:
+            init_input = np.array([*init_input, *[0] * (pad_args)])
+        min_object = root(minFunc, init_input, tol=tol)
+        assert min_object.success
         minimizing_guess = min_object.x
         optimal_state = np.zeros(7)
         optimal_state[func_inputs[fixed_vars]] = init_guess[func_inputs[fixed_vars]]
@@ -216,9 +224,17 @@ class CR3BP:
 
         return x0s_s1, x0s_s2, x0s_u1, x0s_u2
 
-    def manifold_curves(self, x0, period, npts=25, d=1e-4, tol=1e-10):
+    def manifold_curves(self, x0, period, npts=25, d=1e-4, tol=1e-10, termtime=None):
         def terminate(t, x):
-            findzero = x[1] if ((x[0] > (1 - self.mu)) or (x[0] < -self.mu)) else np.nan
+            if termtime is None:
+                findzero = (
+                    # x[1] if ((x[0] > (1 - self.mu)) or (x[0] < -self.mu)) else np.nan
+                    x[1]
+                    if (x[0] < -self.mu)
+                    else np.nan
+                )
+            else:
+                findzero = abs(t) - termtime
             return findzero
 
         terminate.terminal = True
@@ -248,6 +264,19 @@ class CR3BP:
             xs_u2.append(prop_point(x0s_u2[i], False, 100 * tol))
 
         return xs_s1, xs_s2, xs_u1, xs_u2
+
+    def get_stab_index(self, x0, period, tol=3e-16):
+        M = self.monodromy(x0, period, tol)
+        evals = np.linalg.eigvals(M)
+        order = np.argsort(np.abs(evals))
+        lam1 = evals[order[0]]
+        lam2 = evals[order[1]]
+        lam3 = evals[order[2]]
+        lams = np.abs([lam1, lam2, lam3])
+
+        stabs = (lams + 1 / lams) / 2
+
+        return stabs, evals
 
     # def manifold_curves(
     #     self, x0, period, npts=25, d=1e-4, nprop: int = 10000, tol=1e-10
